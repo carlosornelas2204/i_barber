@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "323376431360",
+    "project_id": "ibarber-af73e",
+    "storage_bucket": "ibarber-af73e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:323376431360:android:588fc3b2dd2f84e0f2b3e5",
+        "android_client_info": {
+          "package_name": "iBarber.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdguvPyJ8JFSdx8SfLUzbZGj3v8a5ZqCU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
