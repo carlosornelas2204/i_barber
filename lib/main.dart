@@ -1,9 +1,12 @@
+// ignore_for_file: prefer_const_constructors, avoid_print, use_build_context_synchronously, unnecessary_const
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; //Pacote para usar máscaras nos campos de cadastro e/ou de acesso
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +35,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
 
@@ -58,6 +60,9 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
+
+
+  bool _obscureText = true; //variavel bool para o ícone de "olho" no campo de senha
 
   // Função para realizar o login
   Future<void> _login() async {
@@ -134,9 +139,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-
-
-
   // Função para submeter o formulário quando pressionar Enter
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
@@ -195,18 +197,32 @@ class _LoginPageState extends State<LoginPage> {
               // Campo de senha
               TextFormField(
                 controller: _senhaController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscureText,
+                decoration: InputDecoration(
                   labelText: 'Senha',
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
                   fillColor: Colors.white,
+
+
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
+
+
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -217,6 +233,7 @@ class _LoginPageState extends State<LoginPage> {
                 onFieldSubmitted: (_) {
                   _submitForm();  // Aciona a função de login ao pressionar Enter
                 },
+
               ),
               const SizedBox(height: 16),
               LayoutBuilder(
@@ -289,7 +306,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-
+//Classe da tela inicial na parte inferior da tela
 class _RecoveryPass extends State<RecoveryPass> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -406,7 +423,7 @@ class _RecoveryPass extends State<RecoveryPass> {
   }
 }
 
-
+//Classe da tela de cadastro de cliente
 class _SingUpScreen extends State<SingUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -442,7 +459,7 @@ class _SingUpScreen extends State<SingUpScreen> {
           'nome': _nameController.text.trim(),
           'email': _emailController.text.trim(),
           'telefone': _telefoneController.text.trim(),
-          'tipo_usuario': '',
+          'tipo_usuario': '4',
           'empresa_id': 0,
           'data_criacao': FieldValue.serverTimestamp(),
         });
@@ -476,6 +493,12 @@ class _SingUpScreen extends State<SingUpScreen> {
       return false; // Cadastro falhou
     }
   }
+
+  // Máscara para o campo de telefone -- JUCA 08/03/2025
+  var phoneMaskFormatter = MaskTextInputFormatter(
+    mask: '(##) #####-####', // Máscara base para celular
+    filter: { "#": RegExp(r'[0-9]') }, // Apenas números são permitidos
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -519,6 +542,7 @@ class _SingUpScreen extends State<SingUpScreen> {
                 },
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -544,6 +568,7 @@ class _SingUpScreen extends State<SingUpScreen> {
                 },
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _senhaController,
                 obscureText: true,
@@ -570,6 +595,7 @@ class _SingUpScreen extends State<SingUpScreen> {
                 },
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _senhaConfirmController,
                 obscureText: true,
@@ -599,10 +625,12 @@ class _SingUpScreen extends State<SingUpScreen> {
                 },
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _telefoneController,
                 decoration: const InputDecoration(
                   labelText: 'Telefone de contato',
+                  //hintText: '(99) 99999-9999', // Adicionado decoração de "dica" para o formato do telefone desejado
                   border: const OutlineInputBorder(),
                   enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
@@ -619,11 +647,22 @@ class _SingUpScreen extends State<SingUpScreen> {
                   }
                   return null;
                 },
+                keyboardType: TextInputType.phone, // Obrigando a abertura somente do teclado numérico do celular
+                inputFormatters: [phoneMaskFormatter], // Aplica a máscara criada na váriavel "var phoneMaskFormatter"
                 onFieldSubmitted: (value) {
                   _submitForm();
                 },
+                onChanged: (value) {
+                  // Atualiza a máscara dinamicamente tanto para celular quanto para telefone fixo
+                  if (value.length == 15) { // Celular com 11 dígitos
+                    phoneMaskFormatter.updateMask(mask:'(##) #####-####');
+                  } else { // Telefone fixo com 10 dígitos
+                    phoneMaskFormatter.updateMask(mask:'(##) ####-####');
+                  }
+                },
               ),
               const SizedBox(height: 16),
+
               LayoutBuilder(
                 builder: (context, constraints) {
                   return ElevatedButton(
@@ -669,7 +708,6 @@ class _SingUpScreen extends State<SingUpScreen> {
     }
   }
 }
-
 
 class IndexPage extends StatelessWidget {
   final User user;
@@ -727,9 +765,3 @@ class IndexPage extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
