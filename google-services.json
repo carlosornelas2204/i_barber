@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "300895754103",
+    "project_id": "flutter-firebase-alura-ea0a5",
+    "storage_bucket": "flutter-firebase-alura-ea0a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:300895754103:android:b64628aa5454fdd3a4b372",
+        "android_client_info": {
+          "package_name": "com.example.teste"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGW0BU4_cjhWtrDlsisXIXMSo4Vklufqc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
