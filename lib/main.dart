@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:login_app/session_manager.dart';
 import 'firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -660,16 +661,71 @@ class _IndexPageState extends State<IndexPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Página de Índice'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              await SessionManager.clearSession();
-              Navigator.pushReplacementNamed(context, '/');
-            },
-          ),
-        ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.home),
+              title: Text('Início'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.edit_calendar_sharp),
+              title: Text('Agendar um Serviço'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SchedulingPage(
+                      user: widget.user,
+                      initialUserRole: userRole,
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.list_alt),
+              title: Text('Meus Agendamentos'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AppointmentsListPage(
+                      user: widget.user,
+                      userRole: userRole, // Passe o userRole aqui
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text('Sair'),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                await SessionManager.clearSession();
+                Navigator.pushReplacementNamed(context, '/');
+              },
+            ),
+          ],
+        ),
       ),
       body: Center(
         child: Column(
@@ -714,5 +770,351 @@ class _IndexPageState extends State<IndexPage> {
         ),
       ),
     );
+  }
+}
+
+class SchedulingPage extends StatefulWidget {
+  final User user;
+  final String initialUserRole;
+
+  const SchedulingPage({
+    Key? key,
+    required this.user,
+    required this.initialUserRole,
+  }) : super(key: key);
+
+  @override
+  State<SchedulingPage> createState() => _SchedulingPageState();
+}
+
+class _SchedulingPageState extends State<SchedulingPage> {
+  late String userRole;
+  final _formKey = GlobalKey<FormState>();
+  final _serviceController = TextEditingController();
+  final _barberController = TextEditingController();
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+
+  @override
+  void initState() {
+    super.initState();
+    userRole = widget.initialUserRole;
+    _fetchUserRole();
+  }
+
+  Future<void> _fetchUserRole() async {
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(widget.user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        String updatedRole = userDoc.get('tipo_usuario') ?? '';
+        if (updatedRole != userRole) {
+          setState(() {
+            userRole = updatedRole;
+          });
+          await SessionManager.saveUserSession(
+            userId: widget.user.uid,
+            userRole: updatedRole,
+          );
+        }
+      }
+    } catch (e) {
+      print('Erro ao buscar tipo de usuário: $e');
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(Duration(days: 30)),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null && picked != _selectedTime) {
+      setState(() {
+        _selectedTime = picked;
+      });
+    }
+  }
+
+  Future<void> _submitAppointment() async {
+    if (_formKey.currentState!.validate() &&
+        _selectedDate != null &&
+        _selectedTime != null) {
+
+      try {
+        // Combina data e hora selecionadas
+        final appointmentDateTime = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          _selectedTime!.hour,
+          _selectedTime!.minute,
+        );
+
+        // Salva no Firestore
+        await FirebaseFirestore.instance.collection('agendamentos').add({
+          'userId': widget.user.uid,
+          'userEmail': widget.user.email,
+          'service': _serviceController.text,
+          'barber': _barberController.text,
+          'dateTime': appointmentDateTime,
+          'status': 'pending',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Agendamento realizado com sucesso!')),
+        );
+
+        // Limpa o formulário
+        _serviceController.clear();
+        _barberController.clear();
+        setState(() {
+          _selectedDate = null;
+          _selectedTime = null;
+        });
+
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao agendar: ${e.toString()}')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Preencha todos os campos!')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Agendar Serviço'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _serviceController,
+                decoration: InputDecoration(
+                  labelText: 'Serviço',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Informe o serviço desejado';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _barberController,
+                decoration: InputDecoration(
+                  labelText: 'Barbeiro',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Informe o barbeiro';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              ListTile(
+                title: Text(
+                  _selectedDate == null
+                      ? 'Selecione a data'
+                      : 'Data: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
+                ),
+                trailing: Icon(Icons.calendar_today),
+                onTap: () => _selectDate(context),
+              ),
+              SizedBox(height: 8),
+              ListTile(
+                title: Text(
+                  _selectedTime == null
+                      ? 'Selecione o horário'
+                      : 'Horário: ${_selectedTime!.format(context)}',
+                ),
+                trailing: Icon(Icons.access_time),
+                onTap: () => _selectTime(context),
+              ),
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _submitAppointment,
+                child: Text('Agendar'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AppointmentsListPage extends StatelessWidget {
+  final User user;
+  final String userRole; // Adicione esta linha para receber o userRole
+
+  const AppointmentsListPage({
+    Key? key,
+    required this.user,
+    required this.userRole, // Adicione este parâmetro
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Agendamentos'),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('agendamentos')
+            .orderBy('dateTime')
+            .snapshots(),
+        builder: (context, snapshot) {
+          // ... (mantenha o tratamento de erros e loading igual)
+
+          final appointments = snapshot.data!.docs;
+
+          return ListView.builder(
+            itemCount: appointments.length,
+            itemBuilder: (context, index) {
+              try {
+                final appointment = appointments[index];
+                final data = appointment.data() as Map<String, dynamic>;
+                final appointmentId = appointment.id;
+                final service = data['service'] ?? 'Serviço não especificado';
+                final barber = data['barber'] ?? 'Barbeiro não especificado';
+                final status = data['status'] ?? 'pending';
+                final dateTime = (data['dateTime'] as Timestamp).toDate();
+
+                return Card(
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListTile(
+                    title: Text(service),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Barbeiro: $barber'),
+                        Text('Cliente: ${data['userEmail'] ?? 'Não informado'}'),
+                        Text('Data: ${DateFormat('dd/MM/yyyy').format(dateTime)}'),
+                        Text('Hora: ${DateFormat('HH:mm').format(dateTime)}'),
+                        Text('Status: ${_getStatusText(status)}'),
+                      ],
+                    ),
+                    trailing: _buildActionButtons(
+                      context: context,
+                      status: status,
+                      appointmentId: appointmentId,
+                      userRole: userRole,
+                    ),
+                  ),
+                );
+              } catch (e) {
+                return ListTile(
+                  title: Text('Erro ao carregar agendamento'),
+                  subtitle: Text('Detalhes: ${e.toString()}'),
+                );
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending': return 'Pendente';
+      case 'confirmed': return 'Confirmado';
+      case 'canceled': return 'Cancelado';
+      default: return status;
+    }
+  }
+
+  Widget _buildActionButtons({
+    required BuildContext context,
+    required String status,
+    required String appointmentId,
+    required String userRole,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Botão de confirmar - visível apenas para userRole != '4' e status pendente
+        if (userRole != '4' && status == 'pending')
+          IconButton(
+            icon: Icon(Icons.check, color: Colors.green),
+            onPressed: () => _confirmAppointment(context, appointmentId),
+          ),
+
+        // Botão de cancelar
+        IconButton(
+          icon: Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _cancelAppointment(context, appointmentId),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmAppointment(BuildContext context, String appointmentId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('agendamentos')
+          .doc(appointmentId)
+          .update({'status': 'confirmed'});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Agendamento confirmado com sucesso!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao confirmar: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _cancelAppointment(BuildContext context, String appointmentId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('agendamentos')
+          .doc(appointmentId)
+          .update({'status': 'canceled'});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Agendamento cancelado com sucesso!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao cancelar: ${e.toString()}')),
+      );
+    }
   }
 }
