@@ -64,8 +64,13 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
+  bool _isLoading = false;
 
   Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
@@ -88,6 +93,11 @@ class _LoginPageState extends State<LoginPage> {
           );
 
           Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Dados do usuário não encontrados no banco de dados.')),
+          );
         }
       }
     } on FirebaseAuthException catch (e) {
@@ -100,6 +110,10 @@ class _LoginPageState extends State<LoginPage> {
         errorMessage = 'E-mail inválido.';
       } else if (e.code == 'invalid-credential') {
         errorMessage = 'Credenciais inválidas.';
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = 'Muitas tentativas. Tente novamente mais tarde.';
+      } else if (e.code == 'network-request-failed') {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
       } else {
         errorMessage = 'Erro ao tentar fazer login: ${e.code}';
       }
@@ -107,6 +121,14 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ocorreu um erro inesperado: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -157,6 +179,9 @@ class _LoginPageState extends State<LoginPage> {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira seu e-mail';
                   }
+                  if (!value.contains('@') || !value.contains('.')) {
+                    return 'E-mail inválido';
+                  }
                   return null;
                 },
                 onFieldSubmitted: (_) => _submitForm(),
@@ -181,6 +206,9 @@ class _LoginPageState extends State<LoginPage> {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira sua senha';
                   }
+                  if (value.length < 6) {
+                    return 'A senha deve ter pelo menos 6 caracteres';
+                  }
                   return null;
                 },
                 onFieldSubmitted: (_) => _submitForm(),
@@ -189,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
               SizedBox(
                 width: 200,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6bc2d3),
                     foregroundColor: Colors.white,
@@ -199,7 +227,9 @@ class _LoginPageState extends State<LoginPage> {
                       side: const BorderSide(color: Color(0xFF202A44), width: 2),
                     ),
                   ),
-                  child: const Text(
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
                     'Entrar',
                     style: TextStyle(
                       fontSize: 18,
@@ -268,8 +298,13 @@ class _SingUpScreenState extends State<SingUpScreen> {
   final _senhaController = TextEditingController();
   final _senhaConfirmController = TextEditingController();
   final _telefoneController = TextEditingController();
+  bool _isLoading = false;
 
   Future<bool> _cadastrarUsuario() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       if (_senhaController.text.trim().length < 6) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -292,19 +327,13 @@ class _SingUpScreenState extends State<SingUpScreen> {
         'email': _emailController.text.trim(),
         'telefone': _telefoneController.text.trim(),
         'empresa_id': 0,
+        'tipo_usuario': '4', // Tipo padrão para cliente
         'data_criacao': FieldValue.serverTimestamp(),
       });
 
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .get();
-
-      String userRole = userDoc.get('tipo_usuario') ?? '';
-
       await SessionManager.saveUserSession(
         userId: user.uid,
-        userRole: userRole,
+        userRole: '4', // Define como cliente por padrão
       );
 
       return true;
@@ -316,6 +345,10 @@ class _SingUpScreenState extends State<SingUpScreen> {
         errorMessage = 'E-mail já está em uso.';
       } else if (e.code == 'invalid-email') {
         errorMessage = 'E-mail inválido.';
+      } else if (e.code == 'operation-not-allowed') {
+        errorMessage = 'Operação não permitida.';
+      } else if (e.code == 'network-request-failed') {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -324,9 +357,13 @@ class _SingUpScreenState extends State<SingUpScreen> {
       return false;
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ocorreu um erro inesperado. Tente novamente.')),
+        SnackBar(content: Text('Ocorreu um erro inesperado: ${e.toString()}')),
       );
       return false;
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -374,6 +411,9 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira seu e-mail';
                   }
+                  if (!value.contains('@') || !value.contains('.')) {
+                    return 'E-mail inválido';
+                  }
                   return null;
                 },
               ),
@@ -395,6 +435,9 @@ class _SingUpScreenState extends State<SingUpScreen> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira seu nome completo';
+                  }
+                  if (value.length < 3) {
+                    return 'Nome muito curto';
                   }
                   return null;
                 },
@@ -454,6 +497,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _telefoneController,
+                keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
                   labelText: 'Telefone de contato',
                   border: OutlineInputBorder(),
@@ -470,12 +514,15 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira seu telefone de contato';
                   }
+                  if (value.length < 10) {
+                    return 'Telefone inválido';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6bc2d3),
                   foregroundColor: Colors.white,
@@ -485,7 +532,9 @@ class _SingUpScreenState extends State<SingUpScreen> {
                     side: const BorderSide(color: Color(0xFF202A44), width: 2),
                   ),
                 ),
-                child: const Text(
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
                   'Cadastrar',
                   style: TextStyle(
                     fontSize: 18,
@@ -511,8 +560,13 @@ class RecoveryPass extends StatefulWidget {
 class _RecoveryPassState extends State<RecoveryPass> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  bool _isLoading = false;
 
   Future<void> _recuperarSenha() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: _emailController.text,
@@ -524,14 +578,28 @@ class _RecoveryPassState extends State<RecoveryPass> {
 
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
-      String errorMessage = 'Erro ao tentar enviar o e-mail: ${e.message}';
+      String errorMessage;
+      if (e.code == 'user-not-found') {
+        errorMessage = 'Nenhum usuário encontrado com este e-mail.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'E-mail inválido.';
+      } else if (e.code == 'network-request-failed') {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
+      } else {
+        errorMessage = 'Erro ao tentar enviar o e-mail: ${e.message}';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro desconhecido ao enviar e-mail de recuperação')),
+        SnackBar(content: Text('Erro desconhecido: ${e.toString()}')),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -576,13 +644,16 @@ class _RecoveryPassState extends State<RecoveryPass> {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira seu e-mail';
                   }
+                  if (!value.contains('@') || !value.contains('.')) {
+                    return 'E-mail inválido';
+                  }
                   return null;
                 },
                 onFieldSubmitted: (_) => _submitForm(),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6bc2d3),
                   foregroundColor: Colors.white,
@@ -592,7 +663,9 @@ class _RecoveryPassState extends State<RecoveryPass> {
                     side: const BorderSide(color: Color(0xFF202A44), width: 2),
                   ),
                 ),
-                child: const Text(
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
                   'Recuperar',
                   style: TextStyle(
                     fontSize: 18,
@@ -652,7 +725,9 @@ class _IndexPageState extends State<IndexPage> {
         }
       }
     } catch (e) {
-      print('Erro ao buscar tipo de usuário: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao buscar tipo de usuário: ${e.toString()}')),
+      );
     }
   }
 
@@ -670,12 +745,22 @@ class _IndexPageState extends State<IndexPage> {
               decoration: BoxDecoration(
                 color: Colors.blue,
               ),
-              child: Text(
-                'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    child: Text(widget.user.email?.substring(0, 1).toUpperCase() ?? 'U'),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    widget.user.email ?? 'Usuário',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
             ),
             ListTile(
@@ -709,7 +794,7 @@ class _IndexPageState extends State<IndexPage> {
                   MaterialPageRoute(
                     builder: (context) => AppointmentsListPage(
                       user: widget.user,
-                      userRole: userRole, // Passe o userRole aqui
+                      userRole: userRole,
                     ),
                   ),
                 );
@@ -719,9 +804,15 @@ class _IndexPageState extends State<IndexPage> {
               leading: Icon(Icons.logout),
               title: Text('Sair'),
               onTap: () async {
-                await FirebaseAuth.instance.signOut();
-                await SessionManager.clearSession();
-                Navigator.pushReplacementNamed(context, '/');
+                try {
+                  await FirebaseAuth.instance.signOut();
+                  await SessionManager.clearSession();
+                  Navigator.pushReplacementNamed(context, '/');
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro ao sair: ${e.toString()}')),
+                  );
+                }
               },
             ),
           ],
@@ -794,6 +885,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
   final _barberController = TextEditingController();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -822,33 +914,47 @@ class _SchedulingPageState extends State<SchedulingPage> {
         }
       }
     } catch (e) {
-      print('Erro ao buscar tipo de usuário: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao buscar tipo de usuário: ${e.toString()}')),
+      );
     }
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(Duration(days: 30)),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
+    try {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(Duration(days: 30)),
+      );
+      if (picked != null && picked != _selectedDate) {
+        setState(() {
+          _selectedDate = picked;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao selecionar data: ${e.toString()}')),
+      );
     }
   }
 
   Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (picked != null && picked != _selectedTime) {
-      setState(() {
-        _selectedTime = picked;
-      });
+    try {
+      final TimeOfDay? picked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+      if (picked != null && picked != _selectedTime) {
+        setState(() {
+          _selectedTime = picked;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao selecionar horário: ${e.toString()}')),
+      );
     }
   }
 
@@ -856,9 +962,11 @@ class _SchedulingPageState extends State<SchedulingPage> {
     if (_formKey.currentState!.validate() &&
         _selectedDate != null &&
         _selectedTime != null) {
+      setState(() {
+        _isLoading = true;
+      });
 
       try {
-        // Combina data e hora selecionadas
         final appointmentDateTime = DateTime(
           _selectedDate!.year,
           _selectedDate!.month,
@@ -867,7 +975,6 @@ class _SchedulingPageState extends State<SchedulingPage> {
           _selectedTime!.minute,
         );
 
-        // Salva no Firestore
         await FirebaseFirestore.instance.collection('agendamentos').add({
           'userId': widget.user.uid,
           'userEmail': widget.user.email,
@@ -882,18 +989,24 @@ class _SchedulingPageState extends State<SchedulingPage> {
           SnackBar(content: Text('Agendamento realizado com sucesso!')),
         );
 
-        // Limpa o formulário
         _serviceController.clear();
         _barberController.clear();
         setState(() {
           _selectedDate = null;
           _selectedTime = null;
         });
-
+      } on FirebaseException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro no Firebase: ${e.message}')),
+        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro ao agendar: ${e.toString()}')),
         );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -919,6 +1032,14 @@ class _SchedulingPageState extends State<SchedulingPage> {
                 decoration: InputDecoration(
                   labelText: 'Serviço',
                   border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -933,6 +1054,14 @@ class _SchedulingPageState extends State<SchedulingPage> {
                 decoration: InputDecoration(
                   labelText: 'Barbeiro',
                   border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -963,10 +1092,14 @@ class _SchedulingPageState extends State<SchedulingPage> {
               ),
               SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _submitAppointment,
-                child: Text('Agendar'),
+                onPressed: _isLoading ? null : _submitAppointment,
+                child: _isLoading
+                    ? CircularProgressIndicator()
+                    : Text('Agendar'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 50),
+                  backgroundColor: Color(0xFF6bc2d3),
+                  foregroundColor: Colors.white,
                 ),
               ),
             ],
@@ -977,31 +1110,106 @@ class _SchedulingPageState extends State<SchedulingPage> {
   }
 }
 
-class AppointmentsListPage extends StatelessWidget {
+class AppointmentsListPage extends StatefulWidget {
   final User user;
-  final String userRole; // Adicione esta linha para receber o userRole
+  final String userRole;
 
   const AppointmentsListPage({
     Key? key,
     required this.user,
-    required this.userRole, // Adicione este parâmetro
+    required this.userRole,
   }) : super(key: key);
+
+  @override
+  _AppointmentsListPageState createState() => _AppointmentsListPageState();
+}
+
+class _AppointmentsListPageState extends State<AppointmentsListPage> {
+  String _statusFilter = 'all';
+  bool _showUpcomingOnly = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Agendamentos'),
+        title: Row(
+          children: [
+            Text('Agendamentos'),
+            if (_statusFilter != 'all' || _showUpcomingOnly)
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Chip(
+                  label: Text(
+                    _showUpcomingOnly
+                        ? 'Próximos 2 dias'
+                        : _statusFilter == 'pending'
+                        ? 'Pendentes'
+                        : _statusFilter == 'confirmed'
+                        ? 'Confirmados'
+                        : 'Cancelados',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  backgroundColor: Colors.blue[100],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              setState(() {
+                _statusFilter = value;
+              });
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem(value: 'all', child: Text('Todos')),
+              PopupMenuItem(value: 'pending', child: Text('Pendentes')),
+              PopupMenuItem(value: 'confirmed', child: Text('Confirmados')),
+              PopupMenuItem(value: 'canceled', child: Text('Cancelados')),
+            ],
+            icon: Icon(Icons.filter_list),
+          ),
+          IconButton(
+            icon: Icon(_showUpcomingOnly
+                ? Icons.calendar_today
+                : Icons.calendar_view_day),
+            onPressed: () {
+              setState(() {
+                _showUpcomingOnly = !_showUpcomingOnly;
+              });
+            },
+            tooltip: _showUpcomingOnly ? 'Mostrar todos' : 'Mostrar próximos 2 dias',
+          ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('agendamentos')
-            .orderBy('dateTime')
-            .snapshots(),
+        stream: _buildQuery(),
         builder: (context, snapshot) {
-          // ... (mantenha o tratamento de erros e loading igual)
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Erro ao carregar agendamentos: ${snapshot.error}'),
+            );
+          }
 
-          final appointments = snapshot.data!.docs;
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          final appointments = snapshot.data!.docs.where(_filterAppointments).toList();
+
+          if (appointments.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  _showUpcomingOnly
+                      ? 'Nenhum agendamento confirmado nos próximos 2 dias'
+                      : 'Nenhum agendamento encontrado',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            );
+          }
 
           return ListView.builder(
             itemCount: appointments.length,
@@ -1014,28 +1222,71 @@ class AppointmentsListPage extends StatelessWidget {
                 final barber = data['barber'] ?? 'Barbeiro não especificado';
                 final status = data['status'] ?? 'pending';
                 final dateTime = (data['dateTime'] as Timestamp).toDate();
+                final userEmail = data['userEmail'] ?? 'Não informado';
 
-                return Card(
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    title: Text(service),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Barbeiro: $barber'),
-                        Text('Cliente: ${data['userEmail'] ?? 'Não informado'}'),
-                        Text('Data: ${DateFormat('dd/MM/yyyy').format(dateTime)}'),
-                        Text('Hora: ${DateFormat('HH:mm').format(dateTime)}'),
-                        Text('Status: ${_getStatusText(status)}'),
-                      ],
-                    ),
-                    trailing: _buildActionButtons(
-                      context: context,
-                      status: status,
-                      appointmentId: appointmentId,
-                      userRole: userRole,
-                    ),
-                  ),
+                return FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('usuarios')
+                      .doc(data['userId'])
+                      .get(),
+                  builder: (context, userSnapshot) {
+                    // Mostra loading enquanto busca o nome
+                    if (userSnapshot.connectionState == ConnectionState.waiting) {
+                      return Card(
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: ListTile(
+                          title: Text(service),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Barbeiro: $barber'),
+                              SizedBox(height: 4),
+                              CircularProgressIndicator(strokeWidth: 2),
+                            ],
+                          ),
+                          trailing: status != 'canceled'
+                              ? _buildActionButtons(
+                            context: context,
+                            status: status,
+                            appointmentId: appointmentId,
+                            userRole: widget.userRole,
+                          )
+                              : null,
+                        ),
+                      );
+                    }
+
+                    String clienteNome = userEmail;
+                    if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                      clienteNome = userSnapshot.data!.get('nome') ?? userEmail;
+                    }
+
+                    return Card(
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: ListTile(
+                        title: Text(service),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Barbeiro: $barber'),
+                            if (widget.userRole != '4')
+                              Text('Cliente: $clienteNome'),
+                            Text('Data: ${DateFormat('dd/MM/yyyy').format(dateTime)}'),
+                            Text('Hora: ${DateFormat('HH:mm').format(dateTime)}'),
+                            Text('Status: ${_getStatusText(status)}'),
+                          ],
+                        ),
+                        trailing: status != 'canceled'
+                            ? _buildActionButtons(
+                          context: context,
+                          status: status,
+                          appointmentId: appointmentId,
+                          userRole: widget.userRole,
+                        )
+                            : null,
+                      ),
+                    );
+                  },
                 );
               } catch (e) {
                 return ListTile(
@@ -1050,12 +1301,52 @@ class AppointmentsListPage extends StatelessWidget {
     );
   }
 
+  Stream<QuerySnapshot> _buildQuery() {
+    Query query = FirebaseFirestore.instance
+        .collection('agendamentos')
+        .orderBy('dateTime');
+
+    if (widget.userRole == '4') {
+      query = query.where('userId', isEqualTo: widget.user.uid);
+    }
+
+    return query.snapshots();
+  }
+
+  bool _filterAppointments(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final status = data['status'] ?? 'pending';
+    final dateTime = (data['dateTime'] as Timestamp).toDate();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final twoDaysLater = today.add(Duration(days: 2));
+
+    // Aplicar filtro de status
+    if (_statusFilter != 'all' && status != _statusFilter) {
+      return false;
+    }
+
+    // Aplicar filtro de próximos 2 dias (apenas confirmados)
+    if (_showUpcomingOnly) {
+      // Primeiro verifica se está no período
+      final isInNextTwoDays = !dateTime.isBefore(today) && !dateTime.isAfter(twoDaysLater);
+      // Depois verifica se está confirmado
+      return isInNextTwoDays && status == 'confirmed';
+    }
+
+    return true;
+  }
+
   String _getStatusText(String status) {
     switch (status) {
-      case 'pending': return 'Pendente';
-      case 'confirmed': return 'Confirmado';
-      case 'canceled': return 'Cancelado';
-      default: return status;
+      case 'pending':
+        return 'Pendente';
+      case 'confirmed':
+        return 'Confirmado';
+      case 'canceled':
+        return 'Cancelado';
+      default:
+        return status;
     }
   }
 
@@ -1068,19 +1359,51 @@ class AppointmentsListPage extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Botão de confirmar - visível apenas para userRole != '4' e status pendente
         if (userRole != '4' && status == 'pending')
           IconButton(
             icon: Icon(Icons.check, color: Colors.green),
             onPressed: () => _confirmAppointment(context, appointmentId),
           ),
-
-        // Botão de cancelar
-        IconButton(
-          icon: Icon(Icons.delete, color: Colors.red),
-          onPressed: () => _cancelAppointment(context, appointmentId),
-        ),
+        if (status != 'canceled') // Não mostra o botão de cancelar se já estiver cancelado
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _showCancelConfirmationDialog(context, appointmentId),
+          ),
       ],
+    );
+  }
+
+  Future<void> _showCancelConfirmationDialog(BuildContext context, String appointmentId) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmar cancelamento'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Tem certeza que deseja cancelar este agendamento?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Não'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Sim'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _cancelAppointment(context, appointmentId);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
