@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:login_app/session_manager.dart';
+import 'package:login_app/whatsapp_service.dart';
 import 'firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -169,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -196,7 +197,7 @@ class _LoginPageState extends State<LoginPage> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -401,7 +402,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -426,7 +427,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -452,7 +453,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -478,7 +479,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -504,7 +505,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -634,7 +635,7 @@ class _RecoveryPassState extends State<RecoveryPass> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black54),
                   ),
                   filled: true,
@@ -734,28 +735,48 @@ class _IndexPageState extends State<IndexPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFEEEE9),
       appBar: AppBar(
-        title: const Text('Página de Índice'),
+        title: Text(
+          'iBarber',
+          style: GoogleFonts.iceberg(
+            textStyle: const TextStyle(
+              fontSize: 24,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        backgroundColor: const Color(0xFF6bc2d3),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
+              decoration: const BoxDecoration(
+                color: Color(0xFF6bc2d3),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    child: Text(widget.user.email?.substring(0, 1).toUpperCase() ?? 'U'),
+                    backgroundColor: Colors.white,
+                    child: Text(
+                      widget.user.email?.substring(0, 1).toUpperCase() ?? 'U',
+                      style: const TextStyle(
+                        color: Color(0xFF6bc2d3),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     widget.user.email ?? 'Usuário',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
@@ -764,15 +785,15 @@ class _IndexPageState extends State<IndexPage> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.home),
-              title: Text('Início'),
+              leading: const Icon(Icons.home, color: Color(0xFF6bc2d3)),
+              title: const Text('Início'),
               onTap: () {
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: Icon(Icons.edit_calendar_sharp),
-              title: Text('Agendar um Serviço'),
+              leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
+              title: const Text('Agendar um Serviço'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -786,8 +807,8 @@ class _IndexPageState extends State<IndexPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.list_alt),
-              title: Text('Meus Agendamentos'),
+              leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
+              title: const Text('Meus Agendamentos'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -801,8 +822,8 @@ class _IndexPageState extends State<IndexPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.logout),
-              title: Text('Sair'),
+              leading: const Icon(Icons.logout, color: Color(0xFF6bc2d3)),
+              title: const Text('Sair'),
               onTap: () async {
                 try {
                   await FirebaseAuth.instance.signOut();
@@ -822,45 +843,77 @@ class _IndexPageState extends State<IndexPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Bem-vindo à Página Inicial!',
-              style: TextStyle(fontSize: 24),
-            ),
-            const SizedBox(height: 20),
             Text(
-              'Tipo de Usuário: $userRole',
-              style: const TextStyle(fontSize: 18),
+              'Bem-vindo ao iBarber!',
+              style: GoogleFonts.iceberg(
+                textStyle: const TextStyle(
+                  fontSize: 32,
+                  color: Color(0xFF6bc2d3),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-            const SizedBox(height: 20),
-            if (userRole == '1')
-              const Text(
-                'Você tem permissões de usuário Master.',
-                style: TextStyle(fontSize: 18, color: Colors.green),
-              )
-            else if (userRole == '2')
-              const Text(
-                'Você tem permissões de administrador.',
-                style: TextStyle(fontSize: 18, color: Colors.green),
-              )
-            else if (userRole == '3')
-                const Text(
-                  'Você é um barbeiro.',
-                  style: TextStyle(fontSize: 18, color: Colors.blue),
-                )
-              else if (userRole == '4')
-                  const Text(
-                    'Você é um cliente.',
-                    style: TextStyle(fontSize: 18, color: Colors.blue),
-                  )
-                else
-                  const Text(
-                    'Tipo de usuário desconhecido.',
-                    style: TextStyle(fontSize: 18, color: Colors.red),
+            const SizedBox(height: 30),
+            Image.asset('assets/images/logo.png', width: 200),
+            const SizedBox(height: 30),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color.fromRGBO(158, 158, 158, 0.3), // Corrigido para Color.fromRGBO
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: Offset(0, 3),
                   ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Informações do Usuário',
+                    style: GoogleFonts.roboto(
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        color: Color(0xFF6bc2d3),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    widget.user.email ?? 'Não informado',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Tipo: ${_getUserRoleText(userRole)}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String _getUserRoleText(String role) {
+    switch (role) {
+      case '1':
+        return 'Usuário Master';
+      case '2':
+        return 'Administrador';
+      case '3':
+        return 'Barbeiro';
+      case '4':
+        return 'Cliente';
+      default:
+        return 'Tipo desconhecido';
+    }
   }
 }
 
@@ -926,7 +979,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
         context: context,
         initialDate: DateTime.now(),
         firstDate: DateTime.now(),
-        lastDate: DateTime.now().add(Duration(days: 30)),
+        lastDate: DateTime.now().add(const Duration(days: 30)),
       );
       if (picked != null && picked != _selectedDate) {
         setState(() {
@@ -986,7 +1039,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Agendamento realizado com sucesso!')),
+          const SnackBar(content: Text('Agendamento realizado com sucesso!')),
         );
 
         _serviceController.clear();
@@ -1010,7 +1063,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Preencha todos os campos!')),
+        const SnackBar(content: Text('Preencha todos os campos!')),
       );
     }
   }
@@ -1018,8 +1071,20 @@ class _SchedulingPageState extends State<SchedulingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFEEEE9),
       appBar: AppBar(
-        title: const Text('Agendar Serviço'),
+        title: Text(
+          'Agendar Serviço',
+          style: GoogleFonts.iceberg(
+            textStyle: const TextStyle(
+              fontSize: 24,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        backgroundColor: const Color(0xFF6bc2d3),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1027,79 +1092,116 @@ class _SchedulingPageState extends State<SchedulingPage> {
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
-                controller: _serviceController,
-                decoration: InputDecoration(
-                  labelText: 'Serviço',
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black54),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
+              Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Informe o serviço desejado';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _barberController,
-                decoration: InputDecoration(
-                  labelText: 'Barbeiro',
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Preencha os dados do agendamento',
+                        style: GoogleFonts.roboto(
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            color: Color(0xFF6bc2d3),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _serviceController,
+                        decoration: const InputDecoration(
+                          labelText: 'Serviço',
+                          border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black54),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Informe o serviço desejado';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _barberController,
+                        decoration: const InputDecoration(
+                          labelText: 'Barbeiro',
+                          border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black54),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Informe o barbeiro';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      ListTile(
+                        title: Text(
+                          _selectedDate == null
+                              ? 'Selecione a data'
+                              : 'Data: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
+                        ),
+                        trailing: const Icon(Icons.calendar_today, color: Color(0xFF6bc2d3)),
+                        onTap: () => _selectDate(context),
+                      ),
+                      const SizedBox(height: 8),
+                      ListTile(
+                        title: Text(
+                          _selectedTime == null
+                              ? 'Selecione o horário'
+                              : 'Horário: ${_selectedTime!.format(context)}',
+                        ),
+                        trailing: const Icon(Icons.access_time, color: Color(0xFF6bc2d3)),
+                        onTap: () => _selectTime(context),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitAppointment,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6bc2d3),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: const BorderSide(color: Color(0xFF202A44), width: 2),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text(
+                            'Agendar',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black54),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Informe o barbeiro';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              ListTile(
-                title: Text(
-                  _selectedDate == null
-                      ? 'Selecione a data'
-                      : 'Data: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
-                ),
-                trailing: Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context),
-              ),
-              SizedBox(height: 8),
-              ListTile(
-                title: Text(
-                  _selectedTime == null
-                      ? 'Selecione o horário'
-                      : 'Horário: ${_selectedTime!.format(context)}',
-                ),
-                trailing: Icon(Icons.access_time),
-                onTap: () => _selectTime(context),
-              ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitAppointment,
-                child: _isLoading
-                    ? CircularProgressIndicator()
-                    : Text('Agendar'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                  backgroundColor: Color(0xFF6bc2d3),
-                  foregroundColor: Colors.white,
                 ),
               ),
             ],
@@ -1131,10 +1233,20 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFEEEE9),
       appBar: AppBar(
         title: Row(
           children: [
-            Text('Agendamentos'),
+            Text(
+              'Meus Agendamentos',
+              style: GoogleFonts.iceberg(
+                textStyle: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             if (_statusFilter != 'all' || _showUpcomingOnly)
               Padding(
                 padding: const EdgeInsets.only(left: 8.0),
@@ -1147,13 +1259,15 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
                         : _statusFilter == 'confirmed'
                         ? 'Confirmados'
                         : 'Cancelados',
-                    style: TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 12, color: Colors.white),
                   ),
-                  backgroundColor: Colors.blue[100],
+                  backgroundColor: const Color(0xFF6bc2d3),
                 ),
               ),
           ],
         ),
+        backgroundColor: const Color(0xFF6bc2d3),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -1162,17 +1276,30 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
               });
             },
             itemBuilder: (BuildContext context) => [
-              PopupMenuItem(value: 'all', child: Text('Todos')),
-              PopupMenuItem(value: 'pending', child: Text('Pendentes')),
-              PopupMenuItem(value: 'confirmed', child: Text('Confirmados')),
-              PopupMenuItem(value: 'canceled', child: Text('Cancelados')),
+              const PopupMenuItem<String>(
+                value: 'all',
+                child: Text('Todos', style: TextStyle(color: Color(0xFF6bc2d3))),
+              ),
+              const PopupMenuItem<String>(
+                value: 'pending',
+                child: Text('Pendentes', style: TextStyle(color: Color(0xFF6bc2d3))),
+              ),
+              const PopupMenuItem<String>(
+                value: 'confirmed',
+                child: Text('Confirmados', style: TextStyle(color: Color(0xFF6bc2d3))),
+              ),
+              const PopupMenuItem<String>(
+                value: 'canceled',
+                child: Text('Cancelados', style: TextStyle(color: Color(0xFF6bc2d3))),
+              ),
             ],
-            icon: Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: Colors.white),
           ),
           IconButton(
-            icon: Icon(_showUpcomingOnly
-                ? Icons.calendar_today
-                : Icons.calendar_view_day),
+            icon: Icon(
+              _showUpcomingOnly ? Icons.calendar_today : Icons.calendar_view_day,
+              color: Colors.white,
+            ),
             onPressed: () {
               setState(() {
                 _showUpcomingOnly = !_showUpcomingOnly;
@@ -1192,7 +1319,9 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(color: const Color(0xFF6bc2d3)),
+            );
           }
 
           final appointments = snapshot.data!.docs.where(_filterAppointments).toList();
@@ -1205,13 +1334,14 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
                   _showUpcomingOnly
                       ? 'Nenhum agendamento confirmado nos próximos 2 dias'
                       : 'Nenhum agendamento encontrado',
-                  style: TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 16, color: Color(0xFF6bc2d3)),
                 ),
               ),
             );
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.all(8),
             itemCount: appointments.length,
             itemBuilder: (context, index) {
               try {
@@ -1224,47 +1354,46 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
                 final dateTime = (data['dateTime'] as Timestamp).toDate();
                 final userEmail = data['userEmail'] ?? 'Não informado';
 
-                return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
-                      .collection('usuarios')
-                      .doc(data['userId'])
-                      .get(),
-                  builder: (context, userSnapshot) {
-                    // Mostra loading enquanto busca o nome
-                    if (userSnapshot.connectionState == ConnectionState.waiting) {
-                      return Card(
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: ListTile(
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: const BorderSide(color: Color(0xFF6bc2d3), width: 1),
+                  ),
+                  child: FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('usuarios')
+                        .doc(data['userId'])
+                        .get(),
+                    builder: (context, userSnapshot) {
+                      if (userSnapshot.connectionState == ConnectionState.waiting) {
+                        return ListTile(
                           title: Text(service),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Barbeiro: $barber'),
-                              SizedBox(height: 4),
-                              CircularProgressIndicator(strokeWidth: 2),
+                              const SizedBox(height: 4),
+                              CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: const Color(0xFF6bc2d3),
+                              ),
                             ],
                           ),
-                          trailing: status != 'canceled'
-                              ? _buildActionButtons(
-                            context: context,
-                            status: status,
-                            appointmentId: appointmentId,
-                            userRole: widget.userRole,
-                          )
-                              : null,
+                        );
+                      }
+
+                      String clienteNome = userEmail;
+                      if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                        clienteNome = userSnapshot.data!.get('nome') ?? userEmail;
+                      }
+
+                      return ListTile(
+                        title: Text(
+                          service,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      );
-                    }
-
-                    String clienteNome = userEmail;
-                    if (userSnapshot.hasData && userSnapshot.data!.exists) {
-                      clienteNome = userSnapshot.data!.get('nome') ?? userEmail;
-                    }
-
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        title: Text(service),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1273,7 +1402,18 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
                               Text('Cliente: $clienteNome'),
                             Text('Data: ${DateFormat('dd/MM/yyyy').format(dateTime)}'),
                             Text('Hora: ${DateFormat('HH:mm').format(dateTime)}'),
-                            Text('Status: ${_getStatusText(status)}'),
+                            Row(
+                              children: [
+                                const Text('Status: '),
+                                Text(
+                                  _getStatusText(status),
+                                  style: TextStyle(
+                                    color: _getStatusColor(status),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                         trailing: status != 'canceled'
@@ -1284,13 +1424,13 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
                           userRole: widget.userRole,
                         )
                             : null,
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               } catch (e) {
                 return ListTile(
-                  title: Text('Erro ao carregar agendamento'),
+                  title: const Text('Erro ao carregar agendamento'),
                   subtitle: Text('Detalhes: ${e.toString()}'),
                 );
               }
@@ -1319,18 +1459,14 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
     final dateTime = (data['dateTime'] as Timestamp).toDate();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final twoDaysLater = today.add(Duration(days: 2));
+    final twoDaysLater = today.add(const Duration(days: 2));
 
-    // Aplicar filtro de status
     if (_statusFilter != 'all' && status != _statusFilter) {
       return false;
     }
 
-    // Aplicar filtro de próximos 2 dias (apenas confirmados)
     if (_showUpcomingOnly) {
-      // Primeiro verifica se está no período
       final isInNextTwoDays = !dateTime.isBefore(today) && !dateTime.isAfter(twoDaysLater);
-      // Depois verifica se está confirmado
       return isInNextTwoDays && status == 'confirmed';
     }
 
@@ -1350,6 +1486,19 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
     }
   }
 
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'confirmed':
+        return Colors.green;
+      case 'canceled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildActionButtons({
     required BuildContext context,
     required String status,
@@ -1361,12 +1510,18 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
       children: [
         if (userRole != '4' && status == 'pending')
           IconButton(
-            icon: Icon(Icons.check, color: Colors.green),
+            icon: const Icon(Icons.check, color: Colors.green),
             onPressed: () => _confirmAppointment(context, appointmentId),
           ),
-        if (status != 'canceled') // Não mostra o botão de cancelar se já estiver cancelado
+        if (status == 'confirmed')
           IconButton(
-            icon: Icon(Icons.delete, color: Colors.red),
+            icon: const Icon(Icons.message, color: Colors.green),
+            onPressed: () => _sendWhatsAppNotification(appointmentId),
+            tooltip: 'Enviar notificação via WhatsApp',
+          ),
+        if (status != 'canceled')
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
             onPressed: () => _showCancelConfirmationDialog(context, appointmentId),
           ),
       ],
@@ -1379,23 +1534,23 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirmar cancelamento'),
+          title: const Text('Confirmar cancelamento'),
           content: SingleChildScrollView(
             child: ListBody(
-              children: <Widget>[
+              children: const <Widget>[
                 Text('Tem certeza que deseja cancelar este agendamento?'),
               ],
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Não'),
+              child: const Text('Não', style: TextStyle(color: Color(0xFF6bc2d3))),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Sim'),
+              child: const Text('Sim', style: TextStyle(color: Color(0xFF6bc2d3))),
               onPressed: () {
                 Navigator.of(context).pop();
                 _cancelAppointment(context, appointmentId);
@@ -1415,11 +1570,17 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
           .update({'status': 'confirmed'});
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Agendamento confirmado com sucesso!')),
+        const SnackBar(
+          content: Text('Agendamento confirmado com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao confirmar: ${e.toString()}')),
+        SnackBar(
+          content: Text('Erro ao confirmar: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -1432,11 +1593,77 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
           .update({'status': 'canceled'});
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Agendamento cancelado com sucesso!')),
+        const SnackBar(
+          content: Text('Agendamento cancelado com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao cancelar: ${e.toString()}')),
+        SnackBar(
+          content: Text('Erro ao cancelar: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  Future<void> _sendWhatsAppNotification(String appointmentId) async {
+    try {
+      // Busca os dados do agendamento
+      final doc = await FirebaseFirestore.instance
+          .collection('agendamentos')
+          .doc(appointmentId)
+          .get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data()!;
+      final userId = data['userId'];
+
+      // Busca os dados do usuário
+      final userDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(userId)
+          .get();
+
+      if (!userDoc.exists) return;
+
+      final userData = userDoc.data()!;
+      final phoneNumber = userData['telefone'];
+      final service = data['service'];
+      final dateTime = (data['dateTime'] as Timestamp).toDate();
+
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Número de telefone não cadastrado')),
+        );
+        return;
+      }
+
+      // Formata a mensagem
+      final formattedDate = DateFormat('dd/MM/yyyy').format(dateTime);
+      final formattedTime = DateFormat('HH:mm').format(dateTime);
+
+      final message = '''
+[iBarber] Confirmação de Agendamento
+Olá! Seu agendamento foi confirmado.
+
+🔹 Serviço: $service
+📅 Data: $formattedDate
+⏰ Horário: $formattedTime
+
+Agradecemos pela preferência!
+''';
+
+      // Envia via WhatsApp
+      await WhatsAppService.sendWhatsAppNotification(
+        context: context,
+        phoneNumber: phoneNumber,
+        message: message,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: ${e.toString()}')),
       );
     }
   }

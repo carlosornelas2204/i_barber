@@ -19,6 +19,8 @@ dependencies:
   google_fonts: ^6.2.1
   shared_preferences: ^2.2.2
   intl: ^0.18.1
+  url_launcher: ^6.1.11
+  fluttertoast: ^8.2.2
 
 dev_dependencies:
   flutter_test:
