@@ -7,6 +7,8 @@ import 'package:login_app/whatsapp_service.dart';
 import 'firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; //Pacote para usar máscaras nos campos de cadastro e/ou de acesso
+import 'package:flutter/services.dart'; // Necessário para a classe de máscara do telefone dinamica usando o "extends TextInputFormatter"
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +23,67 @@ void main() async {
     initialRoute: session != null ? '/home' : '/',
     initialUserRole: session?['userRole'] ?? '',
   ));
+}
+
+class TelefoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    final text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    String maskedText = '';
+
+    // Aplica a máscara conforme o tamanho do texto
+    if (text.isNotEmpty) {
+      maskedText = '(${text.substring(0, text.length > 2 ? 2 : text.length)}';
+
+      if (text.length > 2) {
+        maskedText += ') ';
+
+        // Verifica se é celular (11 dígitos) ou fixo (10 dígitos)
+        final isCelular = text.length == 11;
+        final firstPartEnd = isCelular ? 7 : 6;
+
+        if (text.length > (isCelular ? 2 : 2)) {
+          maskedText += text.substring(2, text.length > firstPartEnd ? firstPartEnd : text.length);
+        }
+
+        if (text.length > firstPartEnd) {
+          maskedText += '-${text.substring(firstPartEnd, text.length > (firstPartEnd + 4) ? firstPartEnd + 4 : text.length)}';
+        }
+      }
+    }
+
+    return TextEditingValue(
+      text: maskedText,
+      selection: TextSelection.collapsed(offset: maskedText.length),
+    );
+  }
+}
+
+class CepInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    final text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    String maskedText = '';
+
+    if (text.isNotEmpty) {
+      maskedText = text.substring(0, text.length > 5 ? 5 : text.length);
+
+      if (text.length > 5) {
+        maskedText += '-${text.substring(5, text.length > 8 ? 8 : text.length)}';
+      }
+    }
+
+    return TextEditingValue(
+      text: maskedText,
+      selection: TextSelection.collapsed(offset: maskedText.length),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -49,6 +112,7 @@ class MyApp extends StatelessWidget {
         ),
         '/cadastro': (context) => const SingUpScreen(),
         '/recuperarSenha': (context) => const RecoveryPass(),
+        '/cadastroBarbearia': (context) => const PartnerSingUpScreen(),
       },
     );
   }
@@ -65,6 +129,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
+  bool _obscureText = true; //variavel bool para o ícone de "olho" no campo de senha
   bool _isLoading = false;
 
   Future<void> _login() async {
@@ -190,11 +255,11 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _senhaController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscureText,
+                decoration: InputDecoration(
                   labelText: 'Senha',
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
                   focusedBorder: const OutlineInputBorder(
@@ -202,6 +267,16 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   filled: true,
                   fillColor: Colors.white,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -212,6 +287,7 @@ class _LoginPageState extends State<LoginPage> {
                   }
                   return null;
                 },
+
                 onFieldSubmitted: (_) => _submitForm(),
               ),
               const SizedBox(height: 16),
@@ -250,6 +326,8 @@ class _LoginPageState extends State<LoginPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+
+              // BOTÃO DE CADASTRO DE CLIENTE NA TELA INICIAL
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/cadastro');
@@ -263,6 +341,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
+
+              // BOTÃO DE LEMBRETE DE SENHA NA TELA INICIAL
               const SizedBox(width: 16),
               TextButton(
                 onPressed: () {
@@ -277,6 +357,24 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
+
+              // BOTÃO DE CADASTRO DE BARBEARIA PARCEIRA NA TELA INICIAL
+              const SizedBox(width: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/cadastroBarbearia');
+                },
+                child: const Text(
+                  'Clique para cadastrar sua barbearia',
+                  style: TextStyle(
+                    color: Colors.white,
+                    decoration: TextDecoration.underline,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+
+
             ],
           ),
         ),
@@ -300,6 +398,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
   final _senhaConfirmController = TextEditingController();
   final _telefoneController = TextEditingController();
   bool _isLoading = false;
+  bool _obscureText = true; //variavel bool para o ícone de "olho" no campo de senha
 
   Future<bool> _cadastrarUsuario() async {
     setState(() {
@@ -446,11 +545,11 @@ class _SingUpScreenState extends State<SingUpScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _senhaController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscureText,
+                decoration: InputDecoration(
                   labelText: 'Senha',
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
                   focusedBorder: const OutlineInputBorder(
@@ -458,6 +557,16 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   ),
                   filled: true,
                   fillColor: Colors.white,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -472,11 +581,11 @@ class _SingUpScreenState extends State<SingUpScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _senhaConfirmController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscureText,
+                decoration: InputDecoration(
                   labelText: 'Confirme sua Senha',
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF6bc2d3)),
                   ),
                   focusedBorder: const OutlineInputBorder(
@@ -484,6 +593,16 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   ),
                   filled: true,
                   fillColor: Colors.white,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -499,6 +618,11 @@ class _SingUpScreenState extends State<SingUpScreen> {
               TextFormField(
                 controller: _telefoneController,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11), // Limita a 11 dígitos (DDD + 9 dígitos)
+                  TelefoneInputFormatter(),
+                ],
                 decoration: const InputDecoration(
                   labelText: 'Telefone de contato',
                   border: OutlineInputBorder(),
@@ -512,12 +636,10 @@ class _SingUpScreenState extends State<SingUpScreen> {
                   fillColor: Colors.white,
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira seu telefone de contato';
-                  }
-                  if (value.length < 10) {
-                    return 'Telefone inválido';
-                  }
+                  final digits = value?.replaceAll(RegExp(r'[^0-9]'), '') ?? '';
+                  if (digits.isEmpty) return 'Informe o telefone';
+                  if (digits.length < 10) return 'Telefone incompleto';
+                  if (digits.length > 11) return 'Telefone inválido';
                   return null;
                 },
               ),
@@ -668,6 +790,404 @@ class _RecoveryPassState extends State<RecoveryPass> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
                   'Recuperar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PartnerSingUpScreen extends StatefulWidget {
+  const PartnerSingUpScreen({Key? key}) : super(key: key);
+
+  @override
+  State<PartnerSingUpScreen> createState() => _PartnerSingUpScreenState();
+}
+
+class _PartnerSingUpScreenState extends State<PartnerSingUpScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _senhaController = TextEditingController();
+  final _senhaConfirmController = TextEditingController();
+  final _telefoneController = TextEditingController();
+  final _enderecoController = TextEditingController();
+  final _cepController = TextEditingController();
+  final _numeroController = TextEditingController();
+  final _complementoController = TextEditingController();
+
+  bool _obscureText = true; //variavel bool para o ícone de "olho" no campo de senha
+  bool _isLoading = false;
+
+  Future<bool> _cadastrarEmpresa() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      if (_senhaController.text.trim().length < 6) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A senha deve ter pelo menos 6 caracteres.')));
+        return false;
+      }
+
+
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _senhaController.text.trim());
+
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception("Usuário não encontrado após o cadastro.");
+      }
+
+      await FirebaseFirestore.instance.collection('empresas').doc(user.uid).set({
+        'nome': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'telefone': _telefoneController.text.trim(),
+        'cep':_cepController.text.trim(),
+        'endereco':_enderecoController.text.trim(),
+        'numero':_numeroController.text.trim(),
+        'complemento': _complementoController.text.trim(),
+        'tipo_usuario': '2', // Tipo padrão para empresa, usuário "admin"
+        'data_criacao': FieldValue.serverTimestamp(),
+      });
+
+      await SessionManager.saveUserSession(
+        userId: user.uid,
+        userRole: '2', // Define como admin por padrão
+      );
+
+      return true;
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Erro ao cadastrar empresa.';
+      if (e.code == 'weak-password') {
+        errorMessage = 'A senha deve ter pelo menos 6 caracteres.';
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = 'E-mail já está em uso.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'E-mail inválido.';
+      } else if (e.code == 'operation-not-allowed') {
+        errorMessage = 'Operação não permitida.';
+      } else if (e.code == 'network-request-failed') {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+      return false;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ocorreu um erro inesperado: ${e.toString()}')),
+      );
+      return false;
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      final sucesso = await _cadastrarEmpresa();
+      if (sucesso) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFEEEE9),
+      appBar: AppBar(
+        title: const Text(
+          'Cadastro da Barbearia',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF6bc2d3),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'E-mail',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira seu e-mail';
+                  }
+                  if (!value.contains('@') || !value.contains('.')) {
+                    return 'E-mail inválido';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome da barbearia',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira o nome da barbearia';
+                  }
+                  if (value.length < 3) {
+                    return 'Nome muito curto';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _senhaController,
+                obscureText: _obscureText,
+                decoration: InputDecoration(
+                  labelText: 'Senha',
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira sua senha';
+                  }
+                  if (value.length < 6) {
+                    return 'A senha deve ter pelo menos 6 caracteres';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _senhaConfirmController,
+                obscureText: _obscureText,
+                decoration: InputDecoration(
+                  labelText: 'Confirme sua Senha',
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, confirme sua senha';
+                  }
+                  if (value != _senhaController.text) {
+                    return 'As senhas não coincidem';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _telefoneController,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11), // Limita a 11 dígitos (DDD + 9 dígitos)
+                  TelefoneInputFormatter(),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Telefone de contato',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  final digits = value?.replaceAll(RegExp(r'[^0-9]'), '') ?? '';
+                  if (digits.isEmpty) return 'Informe o telefone';
+                  if (digits.length < 10) return 'Telefone incompleto';
+                  if (digits.length > 11) return 'Telefone inválido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _cepController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'CEP',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(8), // 5 + (hífen) + 3
+                  CepInputFormatter(),
+                ],
+                validator: (value) {
+                  final digits = value?.replaceAll(RegExp(r'[^0-9]'), '') ?? '';
+                  if (digits.isEmpty) return 'Por favor, informe o CEP';
+                  if (digits.length < 8) return 'CEP incompleto';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _enderecoController,
+                decoration: const InputDecoration(
+                  labelText: 'Endereço',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira o endereço da barbearia';
+                  }
+                  if (value.length < 5) {
+                    return 'Endereço muito curto';
+                  }
+                  if (value.contains('.')) {
+                    return 'Insira o endereço sem abreviaçoes';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _numeroController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Número',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(5),
+                ],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, informe o número do endereço';
+                    }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _complementoController,
+                decoration: const InputDecoration(
+                  labelText: 'Complemento',
+                  hintText: "Não obrigatório",
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submitForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6bc2d3),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: Color(0xFF202A44), width: 2),
+                  ),
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                  'Cadastrar barbearia',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1668,3 +2188,4 @@ Agradecemos pela preferência!
     }
   }
 }
+
