@@ -1446,15 +1446,13 @@ class _IndexPageState extends State<IndexPage> {
   List<ListTile> _buildAdminTiles() {
     return [
       ListTile(
-        leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
+        leading: const Icon(Icons.assignment_ind, color: Color(0xFF6bc2d3)),
         title: const Text('Cadastrar barbeiro(a)'),
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SchedulingPage(
-                user: widget.user,
-                initialUserRole: userRole,
+              builder: (context) => RegisterBarberPage(
               ),
             ),
           );
@@ -1482,23 +1480,24 @@ class _IndexPageState extends State<IndexPage> {
   List<ListTile> _buildBarberTiles() {
     return [
       ListTile(
-        leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
-        title: const Text('Agendar um Serviço'),
+        leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
+        title: const Text('Meus Agendamentos'),
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SchedulingPage(
+              builder: (context) => AppointmentsListPage(
                 user: widget.user,
-                initialUserRole: userRole,
+                userRole: userRole,
               ),
             ),
           );
         },
       ),
+
       ListTile(
-        leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
-        title: const Text('Meus Agendamentos'),
+        leading: const Icon(Icons.assignment_ind, color: Color(0xFF6bc2d3)),
+        title: const Text('Meus Clientes'),
         onTap: () {
           Navigator.push(
             context,
@@ -2319,3 +2318,292 @@ Agradecemos pela preferência!
   }
 }
 
+class RegisterBarberPage extends StatefulWidget {
+  const RegisterBarberPage({Key? key}) : super(key: key);
+
+  @override
+  State<RegisterBarberPage> createState() => _RegisterBarberPage();
+}
+
+class _RegisterBarberPage extends State<RegisterBarberPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _senhaController = TextEditingController();
+  final _senhaConfirmController = TextEditingController();
+  final _telefoneController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscureText = true; //variavel bool para o ícone de "olho" no campo de senha
+
+  Future<bool> _cadastrarUsuario() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      if (_senhaController.text.trim().length < 6) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A senha deve ter pelo menos 6 caracteres.')));
+        return false;
+      }
+
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _senhaController.text.trim());
+
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception("Usuário não encontrado após o cadastro.");
+      }
+
+      await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set({
+        'nome': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'telefone': _telefoneController.text.trim(),
+        'empresa_id': 0,
+        'tipo_usuario': '3', // Tipo padrão para barbeiro
+        'data_criacao': FieldValue.serverTimestamp(),
+      });
+
+      await SessionManager.saveUserSession(
+        userId: user.uid,
+        userRole: '3', // Define como cliente por padrão
+      );
+
+      return true;
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Erro ao cadastrar usuário.';
+      if (e.code == 'weak-password') {
+        errorMessage = 'A senha deve ter pelo menos 6 caracteres.';
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = 'E-mail já está em uso.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'E-mail inválido.';
+      } else if (e.code == 'operation-not-allowed') {
+        errorMessage = 'Operação não permitida.';
+      } else if (e.code == 'network-request-failed') {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+      return false;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ocorreu um erro inesperado: ${e.toString()}')),
+      );
+      return false;
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      final sucesso = await _cadastrarUsuario();
+      if (sucesso) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFEEEE9),
+      appBar: AppBar(
+        title: const Text(
+          'Cadastro',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF6bc2d3),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'E-mail',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira seu e-mail';
+                  }
+                  if (!value.contains('@') || !value.contains('.')) {
+                    return 'E-mail inválido';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome Completo',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira seu nome completo';
+                  }
+                  if (value.length < 3) {
+                    return 'Nome muito curto';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _senhaController,
+                obscureText: _obscureText,
+                decoration: InputDecoration(
+                  labelText: 'Senha',
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira sua senha';
+                  }
+                  if (value.length < 6) {
+                    return 'A senha deve ter pelo menos 6 caracteres';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _senhaConfirmController,
+                obscureText: _obscureText,
+                decoration: InputDecoration(
+                  labelText: 'Confirme sua Senha',
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText; // Alterna a visibilidade
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, confirme sua senha';
+                  }
+                  if (value != _senhaController.text) {
+                    return 'As senhas não coincidem';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _telefoneController,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11), // Limita a 11 dígitos (DDD + 9 dígitos)
+                  TelefoneInputFormatter(),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Telefone de contato',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  final digits = value?.replaceAll(RegExp(r'[^0-9]'), '') ?? '';
+                  if (digits.isEmpty) return 'Informe o telefone';
+                  if (digits.length < 10) return 'Telefone incompleto';
+                  if (digits.length > 11) return 'Telefone inválido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submitForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6bc2d3),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: Color(0xFF202A44), width: 2),
+                  ),
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                  'Cadastrar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
