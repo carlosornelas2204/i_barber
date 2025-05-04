@@ -7,7 +7,6 @@ import 'package:login_app/whatsapp_service.dart';
 import 'firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; //Pacote para usar máscaras nos campos de cadastro e/ou de acesso
 import 'package:flutter/services.dart'; // Necessário para a classe de máscara do telefone dinamica usando o "extends TextInputFormatter"
 
 void main() async {
@@ -1304,6 +1303,8 @@ class _IndexPageState extends State<IndexPage> {
                 ],
               ),
             ),
+
+            //ListTile padrão para todos usuários
             ListTile(
               leading: const Icon(Icons.home, color: Color(0xFF6bc2d3)),
               title: const Text('Início'),
@@ -1311,36 +1312,20 @@ class _IndexPageState extends State<IndexPage> {
                 Navigator.pop(context);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
-              title: const Text('Agendar um Serviço'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SchedulingPage(
-                      user: widget.user,
-                      initialUserRole: userRole,
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
-              title: const Text('Meus Agendamentos'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AppointmentsListPage(
-                      user: widget.user,
-                      userRole: userRole,
-                    ),
-                  ),
-                );
-              },
-            ),
+
+            // Construção dos demais ListTiles por usuário logado, sendo separado por lists auxiliares
+            if (userRole == '1')  // Master
+              ..._buildMasterTiles(), // Retorna uma lista de ListTile
+
+            if (userRole == '2')  // Master
+              ..._buildAdminTiles(),
+
+            if (userRole == '3') // Barbeiro
+              ..._buildBarberTiles(),
+
+            if (userRole == '4') // Cliente
+              ..._buildClientTiles(),
+
             ListTile(
               leading: const Icon(Icons.logout, color: Color(0xFF6bc2d3)),
               title: const Text('Sair'),
@@ -1420,6 +1405,151 @@ class _IndexPageState extends State<IndexPage> {
       ),
     );
   }
+
+  //Criando a listTile do usuário MASTER
+  List<ListTile> _buildMasterTiles() {
+    return [
+      ListTile(
+        leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
+        title: const Text('Agendar um Serviço'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SchedulingPage(
+                user: widget.user,
+                initialUserRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
+        title: const Text('Meus Agendamentos'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AppointmentsListPage(
+                user: widget.user,
+                userRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  //Criando a listTile do usuário ADMIN
+  List<ListTile> _buildAdminTiles() {
+    return [
+      ListTile(
+        leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
+        title: const Text('Cadastrar barbeiro(a)'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SchedulingPage(
+                user: widget.user,
+                initialUserRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
+        title: const Text('Agendamentos'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AppointmentsListPage(
+                user: widget.user,
+                userRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  //Criando a listTile do usuário BARBEIRO
+  List<ListTile> _buildBarberTiles() {
+    return [
+      ListTile(
+        leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
+        title: const Text('Agendar um Serviço'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SchedulingPage(
+                user: widget.user,
+                initialUserRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
+        title: const Text('Meus Agendamentos'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AppointmentsListPage(
+                user: widget.user,
+                userRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  //Criando a listTile do usuário CLIENTE
+  List<ListTile> _buildClientTiles() {
+    return [
+      ListTile(
+        leading: const Icon(Icons.edit_calendar_sharp, color: Color(0xFF6bc2d3)),
+        title: const Text('Agendar um Serviço'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SchedulingPage(
+                user: widget.user,
+                initialUserRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
+        title: const Text('Meus Agendamentos'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AppointmentsListPage(
+                user: widget.user,
+                userRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
 
   String _getUserRoleText(String role) {
     switch (role) {
