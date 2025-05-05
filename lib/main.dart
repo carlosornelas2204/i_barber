@@ -1453,6 +1453,8 @@ class _IndexPageState extends State<IndexPage> {
             context,
             MaterialPageRoute(
               builder: (context) => RegisterBarberPage(
+                user: widget.user,
+                userRole: userRole,
               ),
             ),
           );
@@ -2319,7 +2321,15 @@ Agradecemos pela preferência!
 }
 
 class RegisterBarberPage extends StatefulWidget {
-  const RegisterBarberPage({Key? key}) : super(key: key);
+
+  final User user;
+  final String userRole;
+
+  const RegisterBarberPage({
+    Key? key,
+    required this.user,
+    required this.userRole,
+  }) : super(key: key);
 
   @override
   State<RegisterBarberPage> createState() => _RegisterBarberPage();
@@ -2366,11 +2376,6 @@ class _RegisterBarberPage extends State<RegisterBarberPage> {
         'data_criacao': FieldValue.serverTimestamp(),
       });
 
-      await SessionManager.saveUserSession(
-        userId: user.uid,
-        userRole: '3', // Define como cliente por padrão
-      );
-
       return true;
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Erro ao cadastrar usuário.';
@@ -2406,7 +2411,12 @@ class _RegisterBarberPage extends State<RegisterBarberPage> {
     if (_formKey.currentState!.validate()) {
       final sucesso = await _cadastrarUsuario();
       if (sucesso) {
-        Navigator.pushReplacementNamed(context, '/home');
+
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Barbeiro cadastrado com sucesso!')),
+        );
       }
     }
   }
