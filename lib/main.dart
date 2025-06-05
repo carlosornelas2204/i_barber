@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:login_app/session_manager.dart';
 import 'package:login_app/whatsapp_service.dart';
 import 'firebase_options.dart';
@@ -1462,6 +1463,21 @@ class _IndexPageState extends State<IndexPage> {
       ),
       ListTile(
         leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
+        title: const Text('Criar um Serviço'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CreateService(
+                user: widget.user,
+                userRole: userRole,
+              ),
+            ),
+          );
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.list_alt, color: Color(0xFF6bc2d3)),
         title: const Text('Agendamentos'),
         onTap: () {
           Navigator.push(
@@ -2344,8 +2360,26 @@ class _RegisterBarberPage extends State<RegisterBarberPage> {
   final _telefoneController = TextEditingController();
   bool _isLoading = false;
   bool _obscureText = true; //variavel bool para o ícone de "olho" no campo de senha
+  int? _empresaId;
 
-  Future<bool> _cadastrarUsuario() async {
+  Future<void> _carregarEmpresaId() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Usuário não autenticado")),
+      );
+      return;
+    }
+
+    final userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
+
+    setState(() {
+      _empresaId = userDoc.data()?['empresa_id'];
+    });
+  }
+
+  Future<bool> _cadastrarBarbeiro() async {
     setState(() {
       _isLoading = true;
     });
@@ -2371,7 +2405,7 @@ class _RegisterBarberPage extends State<RegisterBarberPage> {
         'nome': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'telefone': _telefoneController.text.trim(),
-        'empresa_id': 0,
+        'empresa_id': _empresaId,
         'tipo_usuario': '3', // Tipo padrão para barbeiro
         'data_criacao': FieldValue.serverTimestamp(),
       });
@@ -2407,9 +2441,15 @@ class _RegisterBarberPage extends State<RegisterBarberPage> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _carregarEmpresaId();
+  }
+
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      final sucesso = await _cadastrarUsuario();
+      final sucesso = await _cadastrarBarbeiro();
       if (sucesso) {
 
         Navigator.pop(context);
@@ -2590,6 +2630,299 @@ class _RegisterBarberPage extends State<RegisterBarberPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
+                onPressed: _isLoading ? null : _submitForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6bc2d3),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: Color(0xFF202A44), width: 2),
+                  ),
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                  'Cadastrar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CreateService extends StatefulWidget {
+
+  final User user;
+  final String userRole;
+
+  const CreateService({
+    Key? key,
+    required this.user,
+    required this.userRole,
+  }) : super(key: key);
+
+  @override
+  State<CreateService> createState() => _CreateServiceState();
+}
+
+class _CreateServiceState extends State<CreateService> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _valueController = TextEditingController();
+  final _timeController = TextEditingController();
+  final _iconController = TextEditingController();
+  bool _isLoading = false;
+  IconData? iconeSelecionado;
+  int? _empresaId;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarEmpresaId();
+  }
+
+  Future<void> _carregarEmpresaId() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Usuário não autenticado")),
+      );
+      return;
+    }
+
+    final userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
+
+    setState(() {
+      _empresaId = userDoc.data()?['empresa_id'];
+    });
+  }
+
+  final Map<String, IconData> iconesDisponiveis = {
+    'scissors': FontAwesomeIcons.scissors,
+    'cut': Icons.cut,
+    'face': Icons.face,
+    'wash': Icons.wash,
+    'color_lens': Icons.color_lens,
+  };
+
+  Future<void> _mostrarSeletorDeIcones(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          height: MediaQuery.of(context).size.height * 0.4,
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1,
+            ),
+            itemCount: iconesDisponiveis.length,
+            itemBuilder: (context, index) {
+              final nomeIcone = iconesDisponiveis.keys.elementAt(index);
+              final icone = iconesDisponiveis[nomeIcone]!;
+
+              return IconButton(
+                icon: Icon(icone),
+                iconSize: 30,
+                color: iconeSelecionado == icone
+                    ? const Color(0xFF6bc2d3)
+                    : Colors.grey[600],
+                onPressed: () {
+                  setState(() {
+                    iconeSelecionado = icone;
+                    _iconController.text = nomeIcone;
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _cadastrarServico() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      if (_empresaId == null) {
+        throw Exception('ID da empresa não encontrado');
+      }
+
+      await FirebaseFirestore.instance.collection('servicos').add({
+        'nome_servico': _nameController.text.trim(),
+        'valor_servico': _valueController.text.trim(),
+        'tempo_servico': _timeController.text.trim(),
+        'empresa_id': _empresaId!,
+        'icone_servico': _iconController.text.trim(),
+      });
+
+      return true;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ocorreu um erro inesperado: ${e.toString()}')),
+      );
+      return false;
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      final sucesso = await _cadastrarServico();
+      if (sucesso) {
+
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Serviço cadastrado com sucesso!')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFEEEE9),
+      appBar: AppBar(
+        title: const Text(
+          'Cadastro de serviço',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF6bc2d3),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome do serviço',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira o nome do serviço';
+                  }
+                  if (value.length < 3) {
+                    return 'Nome do serviço muito curto';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _valueController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly, // Aceita apenas números inteiros
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Valor do serviço',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira o valor do serviço';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _timeController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly, // Aceita apenas números inteiros
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Tempo do serviço (em minutos)',
+                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira o tempo do serviço';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _iconController,
+                readOnly: true,
+                onTap: () => _mostrarSeletorDeIcones(context),
+                decoration: InputDecoration(
+                  labelText: "Ícone do Serviço",
+                  prefixIcon: Icon(
+                    iconeSelecionado ?? Icons.category,
+                    color: const Color(0xFF6bc2d3),
+                  ),
+                  hintText: "Toque para escolher um ícone",
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6bc2d3)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black54),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (value) {
+                  if (iconeSelecionado == null) {
+                    return 'Por favor, selecione um ícone';
+                  }
+                  return null;
+                },
+              ),
+            const SizedBox(height: 16),
+            ElevatedButton(
                 onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6bc2d3),
