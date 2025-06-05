@@ -2742,7 +2742,6 @@ class _CreateServiceState extends State<CreateService> {
                 onPressed: () {
                   setState(() {
                     iconeSelecionado = icone;
-                    _iconController.text = nomeIcone;
                   });
                   Navigator.pop(context);
                 },
